@@ -137,6 +137,102 @@ const getQuestionColumnsData = (
         };
       });
 
+    case "multipleChoiceSingle":
+    case "multipleChoiceMulti":
+      // For MultipleChoice questions, return both the regular question column and a Choice ID column
+      const questionColumn: ColumnDef<TResponseTableData> = {
+        accessorKey: question.id,
+        header: () => (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 overflow-hidden">
+              <span className="h-4 w-4">{QUESTIONS_ICON_MAP[question.type]}</span>
+              <span className="truncate">
+                {getLocalizedValue(recallToHeadline(question.headline, survey, false, "default"), "default")}
+              </span>
+            </div>
+          </div>
+        ),
+        cell: ({ row }) => {
+          const responseValue = row.original.responseData[question.id];
+          const language = row.original.language;
+          return (
+            <RenderResponse
+              question={question}
+              survey={survey}
+              responseData={responseValue}
+              language={language}
+              isExpanded={isExpanded}
+            />
+          );
+        },
+      };
+
+      const choiceIdColumn: ColumnDef<TResponseTableData> = {
+        accessorKey: `${question.id}_choiceId`,
+        header: () => (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 overflow-hidden">
+              <span className="h-4 w-4">{QUESTIONS_ICON_MAP[question.type]}</span>
+              <span className="truncate">Choice ID</span>
+            </div>
+          </div>
+        ),
+        cell: ({ row }) => {
+          const responseValue = row.original.responseData[question.id];
+          const language = row.original.language;
+          let choiceIds: string[] = [];
+
+          if (responseValue && "choices" in question && question.choices) {
+            if (question.type === "multipleChoiceSingle") {
+              // For single select, responseValue is a string
+              if (typeof responseValue === "string") {
+                const selectedChoice = question.choices.find((choice) => {
+                  // Check all available languages for this choice
+                  if (typeof choice.label === "string") {
+                    return choice.label === responseValue;
+                  } else if (typeof choice.label === "object" && choice.label !== null) {
+                    // Check all language variants
+                    return Object.values(choice.label).includes(responseValue);
+                  }
+                  return false;
+                });
+                if (selectedChoice) {
+                  choiceIds = [selectedChoice.id];
+                }
+              }
+            } else {
+              // For multi select, responseValue is an array of strings
+              if (Array.isArray(responseValue)) {
+                choiceIds = responseValue
+                  .map((value) => {
+                    const selectedChoice = question.choices?.find((choice) => {
+                      // Check all available languages for this choice
+                      if (typeof choice.label === "string") {
+                        return choice.label === value;
+                      } else if (typeof choice.label === "object" && choice.label !== null) {
+                        // Check all language variants
+                        return Object.values(choice.label).includes(value);
+                      }
+                      return false;
+                    });
+                    return selectedChoice ? selectedChoice.id : null;
+                  })
+                  .filter(Boolean) as string[];
+              }
+            }
+          }
+
+          return (
+            <p className="truncate font-mono text-xs text-slate-900">
+              {choiceIds.length > 0 ? choiceIds.join(", ") : "-"}
+            </p>
+          );
+        },
+        size: 180,
+      };
+
+      return [questionColumn, choiceIdColumn];
+
     default:
       return [
         {
