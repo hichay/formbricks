@@ -110,6 +110,93 @@ export const renderSurvey = async ({
   const responseCount = await getResponseCountBySurveyId(survey.id);
   const surveyDomain = getSurveyDomain();
 
+  // Show language selection if multi-language is allowed and not selected
+  if (isMultiLanguageAllowed && survey.languages.length > 1 && (!langParam || langParam === "default")) {
+    const enabledLanguages = survey.languages.filter((l) => l.enabled);
+
+    // Helper function to get language display name
+    const getLanguageDisplay = (code: string): string => {
+      const displays: { [key: string]: string } = {
+        en: "English",
+        vi: "Tiếng Việt",
+        fr: "Français",
+        de: "Deutsch",
+        es: "Español",
+        ja: "日本語",
+        zh: "中文",
+        ko: "한국어",
+      };
+      return displays[code.toLowerCase()] || code.toUpperCase();
+    };
+
+    // Helper function to get flag emoji
+    const getFlagEmoji = (code: string): string => {
+      const flags: { [key: string]: string } = {
+        en: "🇬🇧",
+        vi: "🇻🇳",
+        fr: "🇫🇷",
+        de: "🇩🇪",
+        es: "🇪🇸",
+        ja: "🇯🇵",
+        zh: "🇨🇳",
+        ko: "🇰🇷",
+      };
+      return flags[code.toLowerCase()] || "🌐";
+    };
+
+    return (
+      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-b from-white to-slate-50">
+        <div className="mx-auto w-full max-w-md space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-lg">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold leading-9 tracking-tight text-slate-900">
+              Select your language
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Choose your preferred language to continue
+            </p>
+          </div>
+
+          <div className="mt-4">
+            <div className="-mx-6 divide-y divide-slate-200">
+              {enabledLanguages.map((l) => (
+                <a
+                  key={l.language.code}
+                  href={`?lang=${l.language.code}`}
+                  className="flex items-center justify-between px-6 py-4 transition duration-200 hover:bg-slate-50">
+                  <div className="flex items-center space-x-3">
+                    <span className="select-none text-2xl">{getFlagEmoji(l.language.code)}</span>
+                    <div>
+                      <p className="font-medium text-slate-900">{getLanguageDisplay(l.language.code)}</p>
+                      <p className="text-sm text-slate-500">{l.language.code.toUpperCase()}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <svg
+                      className="h-5 w-5 text-slate-400"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      aria-hidden="true">
+                      <path
+                        fillRule="evenodd"
+                        d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {enabledLanguages.length > 5 && (
+            <p className="text-center text-sm text-slate-500">Scroll to see more languages</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (isSurveyPinProtected) {
     return (
       <PinScreen
